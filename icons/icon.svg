@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#4361ee"/>
+  <!-- Staff lines -->
+  <line x1="80" y1="180" x2="432" y2="180" stroke="#fff" stroke-width="4" opacity="0.4"/>
+  <line x1="80" y1="220" x2="432" y2="220" stroke="#fff" stroke-width="4" opacity="0.4"/>
+  <line x1="80" y1="260" x2="432" y2="260" stroke="#fff" stroke-width="4" opacity="0.4"/>
+  <line x1="80" y1="300" x2="432" y2="300" stroke="#fff" stroke-width="4" opacity="0.4"/>
+  <line x1="80" y1="340" x2="432" y2="340" stroke="#fff" stroke-width="4" opacity="0.4"/>
+  <!-- Quarter note on middle line -->
+  <ellipse cx="270" cy="300" rx="30" ry="22" fill="#fff" transform="rotate(-15 270 300)"/>
+  <rect x="296" y="160" width="7" height="142" rx="3" fill="#fff"/>
+</svg>
