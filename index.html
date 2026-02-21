@@ -30,6 +30,12 @@
       <button class="clef-btn" data-clef="grand">Grand</button>
     </div>
 
+    <!-- Instrument mode -->
+    <div class="controls">
+      <button class="instrument-btn active" data-mode="piano">🎹 Piano</button>
+      <button class="instrument-btn" data-mode="guitar">🎸 Guitar</button>
+    </div>
+
     <!-- MIDI section -->
     <div class="midi-section" id="midi-section">
       <label class="midi-toggle-label">
@@ -37,6 +43,25 @@
         MIDI Input
       </label>
       <span class="midi-status disconnected" id="midi-status"></span>
+    </div>
+
+    <!-- Microphone / pitch detection section -->
+    <div class="mic-section" id="mic-section">
+      <label class="midi-toggle-label">
+        <input type="checkbox" id="mic-toggle">
+        🎤 Mic Input
+      </label>
+      <span class="midi-status disconnected" id="mic-status"></span>
+      <div class="mic-controls hidden" id="mic-controls">
+        <div class="mic-meter">
+          <div class="mic-meter-fill" id="mic-meter-fill"></div>
+          <div class="mic-meter-threshold" id="mic-meter-threshold"></div>
+        </div>
+        <label class="mic-threshold-label">
+          Threshold
+          <input type="range" id="mic-threshold" min="0.005" max="0.15" step="0.005" value="0.06">
+        </label>
+      </div>
     </div>
 
     <!-- Level section -->
@@ -67,6 +92,12 @@
     <!-- Staff display -->
     <div class="staff-container">
       <div id="staff"></div>
+    </div>
+
+    <!-- Fingering hint (optional, toggled by user) -->
+    <div class="fingering-row" id="fingering-row">
+      <button class="hint-btn" id="hint-toggle">🎹 Show hint</button>
+      <div class="fingering-hint hidden" id="fingering-hint"></div>
     </div>
 
     <!-- Feedback -->
