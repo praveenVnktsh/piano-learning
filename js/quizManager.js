@@ -65,7 +65,7 @@ export class QuizManager {
     this.total++;
 
     let correct;
-    if (this.inputMode === 'midi') {
+    if (this.inputMode === 'midi' || this.inputMode === 'mic') {
       correct = answer === this.currentNote.midi;
     } else {
       const noteLetter = this.currentNote.name.charAt(0).toUpperCase();

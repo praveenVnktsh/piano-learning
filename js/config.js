@@ -65,6 +65,26 @@ export const LEVELS = {
 
 export const ADVANCEMENT = { minNotes: 10, minAccuracy: 0.85 };
 
+// Guitar tab positions for treble clef notes.
+// Key = written note name (as shown on staff).
+// Guitar sounds one octave below written, so each position gives the sounding pitch.
+// str: 1 = high e, 6 = low E.  fret: 0 = open string.
+export const GUITAR_TABS = {
+  C4: { str: 5, fret: 3 },  // A-string 3rd fret  → C3
+  D4: { str: 4, fret: 0 },  // D-string open      → D3
+  E4: { str: 4, fret: 2 },  // D-string 2nd fret  → E3
+  F4: { str: 4, fret: 3 },  // D-string 3rd fret  → F3
+  G4: { str: 3, fret: 0 },  // G-string open      → G3
+  A4: { str: 3, fret: 2 },  // G-string 2nd fret  → A3
+  B4: { str: 2, fret: 0 },  // B-string open      → B3
+  C5: { str: 2, fret: 1 },  // B-string 1st fret  → C4
+  D5: { str: 2, fret: 3 },  // B-string 3rd fret  → D4
+  E5: { str: 1, fret: 0 },  // e-string open      → E4
+  F5: { str: 1, fret: 1 },  // e-string 1st fret  → F4
+  G5: { str: 1, fret: 3 },  // e-string 3rd fret  → G4
+  A5: { str: 1, fret: 5 },  // e-string 5th fret  → A4
+};
+
 export const FEEDBACK_DELAYS = {
   correct: [800, 700, 600, 500],
   wrong: [2000, 1800, 1500, 1200],
