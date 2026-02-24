@@ -47,19 +47,41 @@ export const LEVELS = {
   treble: [
     { id: 'treble-1', name: 'Staff Lines', description: 'Every Good Boy Does Fine', noteNames: ['E4', 'G4', 'B4', 'D5', 'F5'] },
     { id: 'treble-2', name: 'Staff Spaces', description: 'FACE', noteNames: ['F4', 'A4', 'C5', 'E5'] },
-    { id: 'treble-3', name: 'Full Staff', description: 'All staff notes, no ledger lines', noteNames: ['E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5'] },
-    { id: 'treble-4', name: 'Ledger Lines', description: 'Add middle C below + G5/A5 above', noteNames: ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5', 'G5', 'A5'] },
+    { id: 'treble-3', name: 'Lower Staff', description: 'Notes below middle B', noteNames: ['E4', 'F4', 'G4', 'A4', 'B4'] },
+    { id: 'treble-4', name: 'Upper Staff', description: 'Notes above middle B', noteNames: ['C5', 'D5', 'E5', 'F5'] },
+    { id: 'treble-5', name: 'Full Staff', description: 'All staff notes, no ledger lines', noteNames: ['E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5'] },
+    { id: 'treble-6', name: 'Ledger Below', description: 'Add middle C and D below the staff', noteNames: ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5'] },
+    { id: 'treble-7', name: 'Ledger Above', description: 'Add G5 and A5 above the staff', noteNames: ['E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5', 'G5', 'A5'] },
+    { id: 'treble-8', name: 'Full Range', description: 'All treble notes including ledger lines', noteNames: ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5', 'G5', 'A5'] },
+    { id: 'treble-9', name: 'Skip Reading', description: 'Only notes a 3rd apart — line to line, space to space', noteNames: ['E4', 'G4', 'B4', 'D5', 'F5', 'F4', 'A4', 'C5', 'E5'] },
+    { id: 'treble-10', name: 'Mastery', description: 'Full range, prove you know them all', noteNames: ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5', 'G5', 'A5'] },
   ],
   bass: [
     { id: 'bass-1', name: 'Staff Lines', description: 'Good Boys Do Fine Always', noteNames: ['G2', 'B2', 'D3', 'F3', 'A3'] },
     { id: 'bass-2', name: 'Staff Spaces', description: 'All Cows Eat Grass', noteNames: ['A2', 'C3', 'E3', 'G3'] },
-    { id: 'bass-3', name: 'Full Staff', description: 'All staff notes, no ledger lines', noteNames: ['G2', 'A2', 'B2', 'C3', 'D3', 'E3', 'F3', 'G3', 'A3'] },
-    { id: 'bass-4', name: 'Ledger Lines', description: 'Add ledger lines both ways', noteNames: ['G2', 'A2', 'B2', 'C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4'] },
+    { id: 'bass-3', name: 'Lower Staff', description: 'Notes in the lower half', noteNames: ['G2', 'A2', 'B2', 'C3', 'D3'] },
+    { id: 'bass-4', name: 'Upper Staff', description: 'Notes in the upper half', noteNames: ['D3', 'E3', 'F3', 'G3', 'A3'] },
+    { id: 'bass-5', name: 'Full Staff', description: 'All staff notes, no ledger lines', noteNames: ['G2', 'A2', 'B2', 'C3', 'D3', 'E3', 'F3', 'G3', 'A3'] },
+    { id: 'bass-6', name: 'Ledger Above', description: 'Add B3 and middle C above the staff', noteNames: ['G2', 'A2', 'B2', 'C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4'] },
+    { id: 'bass-7', name: 'Skip Reading', description: 'Notes a 3rd apart — line to line, space to space', noteNames: ['G2', 'B2', 'D3', 'F3', 'A3', 'A2', 'C3', 'E3', 'G3'] },
+    { id: 'bass-8', name: 'Full Range', description: 'All bass notes including ledger lines', noteNames: ['G2', 'A2', 'B2', 'C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4'] },
+    { id: 'bass-9', name: 'Mastery', description: 'Full range, prove you know them all', noteNames: ['G2', 'A2', 'B2', 'C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4'] },
   ],
   grand: [
-    { id: 'grand-1', name: 'Staff Lines', description: 'Line notes in both clefs', trebleNoteNames: ['E4', 'G4', 'B4', 'D5', 'F5'], bassNoteNames: ['G2', 'B2', 'D3', 'F3', 'A3'] },
-    { id: 'grand-2', name: 'All Staff Notes', description: 'Both clefs, no ledger lines', trebleNoteNames: ['E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5'], bassNoteNames: ['G2', 'A2', 'B2', 'C3', 'D3', 'E3', 'F3', 'G3', 'A3'] },
-    { id: 'grand-3', name: 'Full Range', description: 'Everything including ledger lines', trebleNoteNames: ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5', 'G5', 'A5'], bassNoteNames: ['G2', 'A2', 'B2', 'C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4'] },
+    { id: 'grand-1', name: 'Treble Lines', description: 'Line notes in treble clef only', trebleNoteNames: ['E4', 'G4', 'B4', 'D5', 'F5'], bassNoteNames: [] },
+    { id: 'grand-2', name: 'Bass Lines', description: 'Line notes in bass clef only', trebleNoteNames: [], bassNoteNames: ['G2', 'B2', 'D3', 'F3', 'A3'] },
+    { id: 'grand-3', name: 'Lines Both Clefs', description: 'Line notes across both staves', trebleNoteNames: ['E4', 'G4', 'B4', 'D5', 'F5'], bassNoteNames: ['G2', 'B2', 'D3', 'F3', 'A3'] },
+    { id: 'grand-4', name: 'Treble Spaces', description: 'Space notes in treble clef', trebleNoteNames: ['F4', 'A4', 'C5', 'E5'], bassNoteNames: [] },
+    { id: 'grand-5', name: 'Bass Spaces', description: 'Space notes in bass clef', trebleNoteNames: [], bassNoteNames: ['A2', 'C3', 'E3', 'G3'] },
+    { id: 'grand-6', name: 'Spaces Both Clefs', description: 'Space notes across both staves', trebleNoteNames: ['F4', 'A4', 'C5', 'E5'], bassNoteNames: ['A2', 'C3', 'E3', 'G3'] },
+    { id: 'grand-7', name: 'Treble Full Staff', description: 'All treble staff notes', trebleNoteNames: ['E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5'], bassNoteNames: [] },
+    { id: 'grand-8', name: 'Bass Full Staff', description: 'All bass staff notes', trebleNoteNames: [], bassNoteNames: ['G2', 'A2', 'B2', 'C3', 'D3', 'E3', 'F3', 'G3', 'A3'] },
+    { id: 'grand-9', name: 'Both Staves', description: 'All staff notes, no ledger lines', trebleNoteNames: ['E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5'], bassNoteNames: ['G2', 'A2', 'B2', 'C3', 'D3', 'E3', 'F3', 'G3', 'A3'] },
+    { id: 'grand-10', name: 'Middle C Zone', description: 'Notes around middle C — the shared territory', trebleNoteNames: ['C4', 'D4', 'E4'], bassNoteNames: ['A3', 'B3', 'C4'] },
+    { id: 'grand-11', name: 'Ledger Lines', description: 'Ledger line notes in both clefs', trebleNoteNames: ['C4', 'D4', 'G5', 'A5'], bassNoteNames: ['B3', 'C4'] },
+    { id: 'grand-12', name: 'Full Range', description: 'Everything including ledger lines', trebleNoteNames: ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5', 'G5', 'A5'], bassNoteNames: ['G2', 'A2', 'B2', 'C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4'] },
+    { id: 'grand-13', name: 'Skip Reading', description: 'Notes a 3rd apart across both clefs', trebleNoteNames: ['E4', 'G4', 'B4', 'D5', 'F5', 'F4', 'A4', 'C5', 'E5'], bassNoteNames: ['G2', 'B2', 'D3', 'F3', 'A3', 'A2', 'C3', 'E3', 'G3'] },
+    { id: 'grand-14', name: 'Mastery', description: 'Full range — the ultimate test', trebleNoteNames: ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5', 'G5', 'A5'], bassNoteNames: ['G2', 'A2', 'B2', 'C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4'] },
   ],
 };
 
@@ -86,8 +108,8 @@ export const GUITAR_TABS = {
 };
 
 export const FEEDBACK_DELAYS = {
-  correct: [800, 700, 600, 500],
-  wrong: [2000, 1800, 1500, 1200],
+  correct: [800, 800, 700, 700, 600, 600, 500, 500, 400, 400, 350, 350, 300, 300],
+  wrong:   [2000, 2000, 1800, 1800, 1500, 1500, 1200, 1200, 1000, 1000, 900, 900, 800, 800],
 };
 
 export const TIMER_DEFAULTS = {

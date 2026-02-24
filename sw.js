@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sight-reading-v2';
+const CACHE_NAME = 'sight-reading-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -35,7 +35,7 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
-// Network-first for CDN resources, cache-first for local assets
+// Network-first for HTML and JS (so updates load without hard refresh), cache-first for static assets
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
 
@@ -53,7 +53,24 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Cache-first for local assets
+  // Network-first for HTML and JS so code changes load on normal refresh
+  const isHtmlOrJs = e.request.mode === 'navigate' ||
+    url.pathname.endsWith('.html') ||
+    (url.pathname.startsWith('/js/') && url.pathname.endsWith('.js'));
+  if (isHtmlOrJs) {
+    e.respondWith(
+      fetch(e.request)
+        .then((res) => {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+          return res;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // Cache-first for CSS, icons, and other static assets
   e.respondWith(
     caches.match(e.request).then((cached) => {
       return cached || fetch(e.request).then((res) => {

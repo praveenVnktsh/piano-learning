@@ -2,14 +2,14 @@ import { LEVELS, GUITAR_TABS, ACHIEVEMENTS } from './config.js';
 
 export class UIController {
   constructor({ onNoteGuess, onClefChange, onInputModeChange, onLevelSelect, onInstrumentModeChange, onMicThresholdChange,
-                onTimerToggle, onTimerDurationChange, onLeaderboardTabChange }) {
+                onStartGame, onTimerDurationChange, onLeaderboardTabChange }) {
     this.onNoteGuess            = onNoteGuess;
     this.onClefChange           = onClefChange;
     this.onInputModeChange      = onInputModeChange;
     this.onLevelSelect          = onLevelSelect          || (() => {});
     this.onInstrumentModeChange = onInstrumentModeChange || (() => {});
     this.onMicThresholdChange   = onMicThresholdChange   || (() => {});
-    this.onTimerToggle          = onTimerToggle           || (() => {});
+    this.onStartGame            = onStartGame            || (() => {});
     this.onTimerDurationChange  = onTimerDurationChange   || (() => {});
     this.onLeaderboardTabChange = onLeaderboardTabChange  || (() => {});
     this._currentHintNote       = null;
@@ -34,10 +34,18 @@ export class UIController {
     this.levelUpName = document.getElementById('level-up-name');
     this.levelUpDesc = document.getElementById('level-up-desc');
 
+    this.levelDownOverlay = document.getElementById('level-down-overlay');
+    this.levelDownLevel = document.getElementById('level-down-level');
+    this.levelDownName = document.getElementById('level-down-name');
+    this.levelDownDesc = document.getElementById('level-down-desc');
+
     // Timer UI elements
     this.timerRingFg = document.getElementById('timer-ring-fg');
     this.timerText = document.getElementById('timer-text');
     this.timerRingContainer = document.getElementById('timer-ring-container');
+    this.overallTimerValue = document.getElementById('overall-timer-text');
+    this.overallTimerRingFg = document.getElementById('overall-timer-ring-fg');
+    this.overallTimerEl = document.getElementById('overall-timer');
 
     // Gamification HUD elements
     this.hudPoints = document.getElementById('hud-points');
@@ -53,8 +61,13 @@ export class UIController {
     this.achievementTitle = document.getElementById('achievement-title');
     this.achievementDesc = document.getElementById('achievement-desc');
 
-    // Leaderboard elements
-    this.lbContent = document.getElementById('lb-content');
+    this.scoresContent = document.getElementById('scores-content');
+    this.achievementsContent = document.getElementById('achievements-content');
+    this.scoresPrevBtn = document.getElementById('scores-prev');
+    this.scoresNextBtn = document.getElementById('scores-next');
+    this.scoresPageInfo = document.getElementById('scores-page-info');
+    this._scoresPage = 0;
+    this._scoresPageSize = 10;
 
     this.setupNoteButtons();
     this.setupClefButtons();
@@ -63,6 +76,7 @@ export class UIController {
     this.setupLevelSelector();
     this.setupInstrumentMode();
     this.setupHintToggle();
+    this.setupPianoVisualization();
     this.setupMicControls();
     this.setupTimerControls();
     this.setupLeaderboardTabs();
@@ -153,38 +167,83 @@ export class UIController {
   }
 
   setupTimerControls() {
-    const toggle = document.getElementById('timer-toggle');
-    const durationInput = document.getElementById('timer-duration');
+    const startBtn = document.getElementById('start-game-btn');
+    const durationInput = document.getElementById('start-game-duration');
+    const overallDurationInput = document.getElementById('start-game-overall-duration');
+    const timerDurationInput = document.getElementById('timer-duration');
 
-    if (toggle) {
-      toggle.addEventListener('change', (e) => {
-        this.onTimerToggle(e.target.checked);
-        if (this.timerRingContainer) {
-          this.timerRingContainer.style.opacity = e.target.checked ? '1' : '0.3';
-        }
-      });
+    if (startBtn) {
+      startBtn.addEventListener('click', () => this.onStartGame());
     }
+
+    const syncDuration = (val) => {
+      const v = Math.min(300, Math.max(10, val));
+      if (durationInput) durationInput.value = v;
+      if (timerDurationInput) timerDurationInput.value = v;
+      this.onTimerDurationChange(v);
+    };
 
     if (durationInput) {
       durationInput.addEventListener('change', (e) => {
         let val = parseInt(e.target.value, 10);
-        if (isNaN(val) || val < 2) val = 2;
-        if (val > 60) val = 60;
+        if (isNaN(val) || val < 10) val = 10;
+        if (val > 300) val = 300;
+        syncDuration(val);
+      });
+    }
+    if (timerDurationInput) {
+      timerDurationInput.addEventListener('change', (e) => {
+        let val = parseInt(e.target.value, 10);
+        if (isNaN(val) || val < 10) val = 10;
+        if (val > 300) val = 300;
+        syncDuration(val);
+      });
+    }
+    if (overallDurationInput) {
+      overallDurationInput.addEventListener('change', (e) => {
+        let val = parseInt(e.target.value, 10);
+        if (isNaN(val) || val < 60) val = 60;
+        if (val > 3600) val = 3600;
         e.target.value = val;
-        this.onTimerDurationChange(val);
       });
     }
   }
 
+  setRoundState(active) {
+    const overlay = document.getElementById('start-game-overlay');
+    if (overlay) {
+      overlay.classList.toggle('hidden', active);
+    }
+    if (this.timerRingContainer) {
+      this.timerRingContainer.style.opacity = active ? '1' : '0.4';
+    }
+    const overallRingContainer = document.getElementById('overall-timer-ring-container');
+    if (overallRingContainer) {
+      overallRingContainer.style.opacity = active ? '1' : '0.6';
+    }
+    if (this.overallTimerEl) {
+      this.overallTimerEl.style.opacity = active ? '1' : '0.6';
+    }
+  }
+
   setupLeaderboardTabs() {
-    const tabs = document.querySelectorAll('.lb-tab');
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        tabs.forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        this.onLeaderboardTabChange(tab.dataset.tab);
+    if (this.scoresPrevBtn) {
+      this.scoresPrevBtn.addEventListener('click', () => {
+        if (this._scoresPage > 0) {
+          this._scoresPage--;
+          this.onLeaderboardTabChange();
+        }
       });
-    });
+    }
+    if (this.scoresNextBtn) {
+      this.scoresNextBtn.addEventListener('click', () => {
+        const totalPages = Math.max(1, Math.ceil((this._scoresTotal || 0) / this._scoresPageSize));
+        if (this._scoresPage < totalPages - 1) {
+          this._scoresPage++;
+          this.onLeaderboardTabChange();
+        }
+      });
+    }
   }
 
   showFeedback(correct, noteName, delay, customText) {
@@ -282,6 +341,21 @@ export class UIController {
     setTimeout(dismiss, 2000);
   }
 
+  showLevelDown(info) {
+    this.levelDownLevel.textContent = `Level ${info.level}`;
+    this.levelDownName.textContent = info.name;
+    this.levelDownDesc.textContent = '3 wrong in a row — let\'s review';
+    this.levelDownOverlay.classList.remove('hidden');
+
+    const dismiss = () => {
+      this.levelDownOverlay.classList.add('hidden');
+      this.levelDownOverlay.removeEventListener('click', dismiss);
+    };
+
+    this.levelDownOverlay.addEventListener('click', dismiss);
+    setTimeout(dismiss, 2000);
+  }
+
   showMidiStatus(status) {
     const el = document.getElementById('midi-status');
     if (!el) return;
@@ -353,6 +427,102 @@ export class UIController {
     const hintEl = document.getElementById('fingering-hint');
     if (!hintEl || hintEl.classList.contains('hidden')) return;
     this._renderHint(hintEl);
+  }
+
+  setupPianoVisualization() {
+    this.pianoVizEl = document.getElementById('piano-viz');
+    if (!this.pianoVizEl) return;
+    this._renderPianoViz(null);
+  }
+
+  updatePianoVisualization(note) {
+    if (!this.pianoVizEl) return;
+    this._renderPianoViz(note);
+  }
+
+  _renderPianoViz(note) {
+    if (!this.pianoVizEl) return;
+    const NAMES = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+    const WHITE_COUNT = 20;
+    const BLACK_PER_OCTAVE = [0, 1, 3, 4, 5];
+
+    let target = -1;
+    let letter = null;
+    let octave = null;
+    if (note) {
+      letter = note.name.replace(/\d/g, '');
+      octave = parseInt(note.name.replace(/\D/g, ''), 10);
+      const letterIdx = NAMES.indexOf(letter);
+      if (letterIdx >= 0 && octave >= 3 && octave <= 5) {
+        if (octave === 3) target = letterIdx;
+        else if (octave === 4) target = 7 + letterIdx;
+        else target = letterIdx <= 5 ? 14 + letterIdx : -1;
+      }
+    }
+
+    const primary = getComputedStyle(document.documentElement)
+      .getPropertyValue('--primary').trim() || '#4361ee';
+    const pianoWhite = getComputedStyle(document.documentElement)
+      .getPropertyValue('--piano-white').trim() || '#fff';
+    const pianoBlack = getComputedStyle(document.documentElement)
+      .getPropertyValue('--piano-black').trim() || '#222';
+    const pianoStroke = getComputedStyle(document.documentElement)
+      .getPropertyValue('--piano-stroke').trim() || '#bbb';
+    const whiteKeyFill = (i) => (i === target ? primary : pianoWhite);
+    const blackKeyFill = (i) => (i === target ? primary : pianoBlack);
+
+    const W = 18;
+    const H = 52;
+    const BW = 12;
+    const BH = 32;
+    const totalW = WHITE_COUNT * W;
+
+    const blackKeyPositions = [];
+    for (let oct = 0; oct < 2; oct++) {
+      for (const wi of BLACK_PER_OCTAVE) {
+        blackKeyPositions.push((oct * 7 + wi) * W + W - BW / 2);
+      }
+    }
+    for (const wi of [0, 1, 3, 4]) {
+      blackKeyPositions.push((14 + wi) * W + W - BW / 2);
+    }
+
+    const parts = [`<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${H + 12}" viewBox="0 0 ${totalW} ${H + 12}">`];
+    for (let i = 0; i < WHITE_COUNT; i++) {
+      const fill = whiteKeyFill(i);
+      parts.push(`<rect x="${i * W + 0.5}" y="0.5" width="${W - 1}" height="${H}" rx="2" fill="${fill}" stroke="${pianoStroke}" stroke-width="1"/>`);
+    }
+    for (const bx of blackKeyPositions) {
+      parts.push(`<rect x="${bx}" y="0.5" width="${BW}" height="${BH}" rx="2" fill="${pianoBlack}"/>`);
+    }
+    if (target >= 0 && letter && octave) {
+      const lx = target * W + W / 2;
+      parts.push(`<text x="${lx}" y="${H + 10}" text-anchor="middle" font-size="10" fill="${primary}" font-weight="700" font-family="sans-serif">${letter}${octave}</text>`);
+    }
+    parts.push('</svg>');
+    this.pianoVizEl.innerHTML = parts.join('');
+  }
+
+  updateOverallTimer(remaining, max) {
+    if (!this.overallTimerValue || !this.overallTimerEl) return;
+    const m = Math.floor(remaining / 60);
+    const s = Math.floor(remaining % 60);
+    this.overallTimerValue.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+    this.overallTimerEl.classList.toggle('hidden', max <= 0);
+
+    if (this.overallTimerRingFg) {
+      const CIRCUMFERENCE = 2 * Math.PI * 20;
+      const fraction = max > 0 ? remaining / max : 0;
+      const offset = CIRCUMFERENCE * (1 - fraction);
+      this.overallTimerRingFg.setAttribute('stroke-dashoffset', offset.toFixed(1));
+
+      this.overallTimerRingFg.classList.remove('warning', 'danger');
+      if (remaining <= 30) {
+        this.overallTimerRingFg.classList.add('danger');
+      } else if (remaining <= max * 0.2) {
+        this.overallTimerRingFg.classList.add('warning');
+      }
+    }
   }
 
   // Timer display
@@ -440,46 +610,48 @@ export class UIController {
   }
 
   renderLeaderboard(sessions, mode, unlockedAchievements) {
-    if (!this.lbContent) return;
+    const unlocked = unlockedAchievements || [];
 
-    if (mode === 'history') {
+    if (this.scoresContent) {
+      const paginationEl = document.getElementById('scores-pagination');
       if (sessions.length === 0) {
-        this.lbContent.innerHTML = '<div class="lb-empty">No sessions yet. Start playing!</div>';
-        return;
-      }
-      const rows = [...sessions].reverse().map(s => {
-        const date = new Date(s.date);
-        const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-        const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-        const durMin = Math.floor(s.duration / 60);
-        const durSec = s.duration % 60;
-        const durStr = durMin > 0 ? `${durMin}m ${durSec}s` : `${durSec}s`;
-        return `<div class="lb-session-row">
-          <span class="lb-session-date">${dateStr} ${timeStr}</span>
-          <span class="lb-session-points">${s.points.toLocaleString()} pts</span>
-          <span class="lb-session-total">${s.total} Q</span>
-          <span class="lb-session-duration">${durStr}</span>
-        </div>`;
-      }).join('');
-      this.lbContent.innerHTML = rows;
+        this.scoresContent.innerHTML = '<div class="lb-empty">No sessions yet. Start playing!</div>';
+        this._scoresTotal = 0;
+        this._scoresPage = 0;
+        if (paginationEl) paginationEl.classList.add('hidden');
+      } else {
+        const sorted = [...sessions].sort((a, b) => b.points - a.points);
+        this._scoresTotal = sorted.length;
+        const totalPages = Math.max(1, Math.ceil(sorted.length / this._scoresPageSize));
+        this._scoresPage = Math.min(this._scoresPage, totalPages - 1);
+        const start = this._scoresPage * this._scoresPageSize;
+        const pageSessions = sorted.slice(start, start + this._scoresPageSize);
+        const rows = pageSessions.map((s, i) => {
+          const rank = start + i + 1;
+          const date = new Date(s.date);
+          const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+          const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+          const durMin = Math.floor(s.duration / 60);
+          const durSec = s.duration % 60;
+          const durStr = durMin > 0 ? `${durMin}m ${durSec}s` : `${durSec}s`;
+          return `<div class="lb-session-row">
+            <span class="lb-rank">#${rank}</span>
+            <span class="lb-session-date">${dateStr} ${timeStr}</span>
+            <span class="lb-session-points">${s.points.toLocaleString()} pts</span>
+            <span class="lb-session-total">${s.total} Q</span>
+            <span class="lb-session-duration">${durStr}</span>
+          </div>`;
+        }).join('');
+        this.scoresContent.innerHTML = rows;
 
-    } else if (mode === 'top') {
-      if (sessions.length === 0) {
-        this.lbContent.innerHTML = '<div class="lb-empty">No sessions yet.</div>';
-        return;
+        if (this.scoresPrevBtn) this.scoresPrevBtn.disabled = this._scoresPage <= 0;
+        if (this.scoresNextBtn) this.scoresNextBtn.disabled = this._scoresPage >= totalPages - 1;
+        if (this.scoresPageInfo) this.scoresPageInfo.textContent = `${this._scoresPage + 1} / ${totalPages}`;
+        if (paginationEl) paginationEl.classList.toggle('hidden', totalPages <= 1);
       }
-      const sorted = [...sessions].sort((a, b) => b.points - a.points).slice(0, 10);
-      const rows = sorted.map((s, i) => {
-        return `<div class="lb-session-row">
-          <span class="lb-rank">#${i + 1}</span>
-          <span class="lb-session-points">${s.points.toLocaleString()} pts</span>
-          <span class="lb-session-total">${s.total} Q</span>
-        </div>`;
-      }).join('');
-      this.lbContent.innerHTML = rows;
+    }
 
-    } else if (mode === 'achievements') {
-      const unlocked = unlockedAchievements || [];
+    if (this.achievementsContent) {
       const items = ACHIEVEMENTS.map(a => {
         const isUnlocked = unlocked.includes(a.id);
         return `<div class="lb-achievement ${isUnlocked ? '' : 'locked'}">
@@ -490,7 +662,7 @@ export class UIController {
           </div>
         </div>`;
       }).join('');
-      this.lbContent.innerHTML = `<div class="lb-achievement-grid">${items}</div>`;
+      this.achievementsContent.innerHTML = `<div class="lb-achievement-grid">${items}</div>`;
     }
   }
 

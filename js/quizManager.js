@@ -2,7 +2,7 @@ import { getRandomNote, resetGenerator } from './noteGenerator.js';
 import { resolveNotePool, LEVELS, ADVANCEMENT, FEEDBACK_DELAYS } from './config.js';
 
 export class QuizManager {
-  constructor({ clefMode, onNewNote, onFeedback, onScoreUpdate, inputMode, progressManager, onLevelUp, onProgressUpdate,
+  constructor({ clefMode, onNewNote, onFeedback, onScoreUpdate, inputMode, progressManager, onLevelUp, onLevelDown, onProgressUpdate,
                 timerManager, gamificationManager, onGamificationUpdate }) {
     this.clefMode = clefMode;
     this.inputMode = inputMode || 'click';
@@ -10,6 +10,7 @@ export class QuizManager {
     this.onFeedback = onFeedback;
     this.onScoreUpdate = onScoreUpdate;
     this.onLevelUp = onLevelUp || (() => {});
+    this.onLevelDown = onLevelDown || (() => {});
     this.onProgressUpdate = onProgressUpdate || (() => {});
     this.onGamificationUpdate = onGamificationUpdate || (() => {});
     this.progressManager = progressManager;
@@ -27,19 +28,21 @@ export class QuizManager {
     this.notePool = [];
     this.noteStats = {};
     this.recentAnswers = [];
+    this.consecutiveWrong = 0;
 
-    this.timerEnabled = true;
     this.timerDuration = 10;
+    this.roundActive = false;
+    this.onLevelDown = (() => {});
   }
 
-  start() {
+  start(startRound = true) {
     this.score = 0;
     this.total = 0;
     this.streak = 0;
+    this.consecutiveWrong = 0;
     this.recentAnswers = [];
     resetGenerator();
 
-    // Load persisted state
     if (this.progressManager) {
       this.currentLevel = this.progressManager.getLevel(this.clefMode);
       this.noteStats = this.progressManager.getNoteStats(this.clefMode);
@@ -55,9 +58,12 @@ export class QuizManager {
     }
 
     this.notePool = resolveNotePool(this.clefMode, this.currentLevel);
+    this.roundActive = startRound;
     this.onScoreUpdate(this.getStats());
     this.onProgressUpdate(this.getProgressInfo());
-    this.nextNote();
+    if (startRound) {
+      this.nextNote();
+    }
   }
 
   nextNote() {
@@ -66,20 +72,18 @@ export class QuizManager {
     this.currentNote = getRandomNote(this.notePool, weights);
     if (this.currentNote) {
       this.onNewNote(this.currentNote);
-      // Start timer after rendering note
-      if (this.timerEnabled && this.timerManager) {
+      if (this.timerManager) {
         this.timerManager.start(this.timerDuration);
       }
     }
   }
 
   checkAnswer(answer) {
-    if (this.waiting || !this.currentNote) return;
+    if (!this.roundActive || this.waiting || !this.currentNote) return;
 
     this.waiting = true;
     this.total++;
 
-    // Stop timer
     let remainingSeconds = 0;
     if (this.timerManager) {
       remainingSeconds = this.timerManager.getRemaining();
@@ -126,7 +130,7 @@ export class QuizManager {
       gamResult = this.gamificationManager.processAnswer({
         correct,
         remainingSeconds,
-        maxSeconds: this.timerEnabled ? this.timerDuration : 0,
+        maxSeconds: this.timerManager && this.timerManager.isRunning() ? this.timerDuration : 0,
         musicLevel: this.currentLevel,
       });
 
@@ -142,6 +146,7 @@ export class QuizManager {
     if (correct) {
       this.score++;
       this.streak++;
+      this.consecutiveWrong = 0;
       if (this.streak > this.bestStreak) {
         this.bestStreak = this.streak;
         if (this.progressManager) {
@@ -152,7 +157,6 @@ export class QuizManager {
       this.onScoreUpdate(this.getStats());
       this.onProgressUpdate(this.getProgressInfo());
 
-      // Check advancement after correct answer
       if (this.checkAdvancement()) {
         this.advanceLevel();
         return;
@@ -161,10 +165,17 @@ export class QuizManager {
       setTimeout(() => this.nextNote(), correctDelay);
     } else {
       this.streak = 0;
+      this.consecutiveWrong++;
       const feedbackText = isTimeout ? 'Time\'s up!' : null;
       this.onFeedback(false, this.currentNote.name, wrongDelay, feedbackText);
       this.onScoreUpdate(this.getStats());
       this.onProgressUpdate(this.getProgressInfo());
+
+      if (this.consecutiveWrong >= 3 && this.currentLevel > 0) {
+        this.demoteLevel();
+        return;
+      }
+
       setTimeout(() => this.nextNote(), wrongDelay);
     }
   }
@@ -201,6 +212,7 @@ export class QuizManager {
   }
 
   advanceLevel() {
+    if (this.timerManager) this.timerManager.stop();
     this.currentLevel++;
     this.recentAnswers = [];
     resetGenerator();
@@ -236,6 +248,33 @@ export class QuizManager {
     setTimeout(() => this.nextNote(), 2200);
   }
 
+  demoteLevel() {
+    if (this.timerManager) this.timerManager.stop();
+    this.currentLevel--;
+    this.consecutiveWrong = 0;
+    this.recentAnswers = [];
+    resetGenerator();
+
+    if (this.progressManager) {
+      this.progressManager.saveLevel(this.clefMode, this.currentLevel);
+    }
+
+    this.notePool = resolveNotePool(this.clefMode, this.currentLevel);
+
+    const levels = LEVELS[this.clefMode];
+    const levelInfo = levels[this.currentLevel];
+
+    this.onLevelDown({
+      level: this.currentLevel + 1,
+      name: levelInfo.name,
+      description: levelInfo.description,
+    });
+
+    this.onProgressUpdate(this.getProgressInfo());
+
+    setTimeout(() => this.nextNote(), 2200);
+  }
+
   setLevel(idx) {
     const levels = LEVELS[this.clefMode];
     if (!levels || idx < 0 || idx >= levels.length) return;
@@ -255,6 +294,7 @@ export class QuizManager {
     this.score = 0;
     this.total = 0;
     this.streak = 0;
+    this.consecutiveWrong = 0;
 
     this.onScoreUpdate(this.getStats());
     this.onProgressUpdate(this.getProgressInfo());
@@ -264,22 +304,19 @@ export class QuizManager {
   setClefMode(mode) {
     this.clefMode = mode;
     resetGenerator();
-    this.start();
+    this.start(this.roundActive);
   }
 
   setInputMode(mode) {
     this.inputMode = mode;
   }
 
-  setTimerEnabled(enabled) {
-    this.timerEnabled = enabled;
-    if (!enabled && this.timerManager) {
-      this.timerManager.stop();
-    }
-  }
-
   setTimerDuration(seconds) {
     this.timerDuration = seconds;
+  }
+
+  isRoundActive() {
+    return this.timerManager && this.timerManager.isRunning();
   }
 
   getStats() {

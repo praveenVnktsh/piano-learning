@@ -22,66 +22,75 @@
     <p>Identify the note on the staff</p>
   </header>
 
-  <main class="container">
-    <!-- Clef selector -->
-    <div class="controls">
-      <button class="clef-btn active" data-clef="treble">Treble</button>
-      <button class="clef-btn" data-clef="bass">Bass</button>
-      <button class="clef-btn" data-clef="grand">Grand</button>
-    </div>
-
-    <!-- Instrument mode -->
-    <div class="controls">
-      <button class="instrument-btn active" data-mode="piano">🎹 Piano</button>
-      <button class="instrument-btn" data-mode="guitar">🎸 Guitar</button>
-    </div>
-
-    <!-- MIDI section -->
-    <div class="midi-section" id="midi-section">
-      <label class="midi-toggle-label">
-        <input type="checkbox" id="midi-toggle">
-        MIDI Input
-      </label>
-      <span class="midi-status disconnected" id="midi-status"></span>
-    </div>
-
-    <!-- Microphone / pitch detection section -->
-    <div class="mic-section" id="mic-section">
-      <label class="midi-toggle-label">
-        <input type="checkbox" id="mic-toggle">
-        🎤 Mic Input
-      </label>
-      <span class="midi-status disconnected" id="mic-status"></span>
-      <div class="mic-controls hidden" id="mic-controls">
-        <div class="mic-meter">
-          <div class="mic-meter-fill" id="mic-meter-fill"></div>
-          <div class="mic-meter-threshold" id="mic-meter-threshold"></div>
+  <main class="app-layout">
+    <div class="game-column container">
+    <!-- Gamification HUD (points, score, accuracy, streak, combo, multiplier, XP) -->
+    <div class="game-hud" id="game-hud">
+      <div class="hud-item">
+        <span class="hud-label">Points</span>
+        <span class="hud-value" id="hud-points">0</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Score</span>
+        <span class="hud-value" id="score">0 / 0</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Accuracy</span>
+        <span class="hud-value" id="accuracy">0%</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Streak</span>
+        <span class="hud-value" id="streak">0</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Best</span>
+        <span class="hud-value" id="best-streak">0</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Combo</span>
+        <span class="hud-value" id="hud-combo">0</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Multiplier</span>
+        <span class="hud-multiplier" id="hud-multiplier">1x</span>
+      </div>
+      <div class="hud-item hud-xp-item">
+        <span class="hud-label">XP Level <span id="hud-xp-level">0</span></span>
+        <div class="xp-bar">
+          <div class="xp-bar-fill" id="xp-bar-fill"></div>
         </div>
-        <label class="mic-threshold-label">
-          Threshold
-          <input type="range" id="mic-threshold" min="0.005" max="0.15" step="0.005" value="0.06">
-        </label>
       </div>
     </div>
 
-    <!-- Timer section -->
+    <!-- Timer section (round + overall) -->
     <div class="timer-section" id="timer-section">
-      <label class="timer-toggle-label">
-        <input type="checkbox" id="timer-toggle" checked>
-        Timer
-      </label>
-      <div class="timer-input-group">
-        <input type="number" id="timer-duration" class="timer-input" value="10" min="2" max="60" step="1">
+      <div class="overall-timer" id="overall-timer">
+        <span class="overall-timer-label">Session</span>
+        <div class="timer-ring-container" id="overall-timer-ring-container">
+          <svg class="timer-ring" width="48" height="48" viewBox="0 0 48 48">
+            <circle class="timer-ring-bg" cx="24" cy="24" r="20" fill="none" stroke-width="4"/>
+            <circle class="timer-ring-fg" id="overall-timer-ring-fg" cx="24" cy="24" r="20" fill="none" stroke-width="4"
+              stroke-dasharray="125.66" stroke-dashoffset="0" transform="rotate(-90 24 24)"/>
+          </svg>
+          <span class="timer-text" id="overall-timer-text">2:00</span>
+        </div>
+      </div>
+      <div class="timer-input-group hidden" id="timer-duration-group">
+        <input type="number" id="timer-duration" class="timer-input" value="10" min="10" max="300" step="10">
         <span class="timer-unit">sec</span>
       </div>
-      <div class="timer-ring-container" id="timer-ring-container">
+      <div class="note-timer" id="note-timer">
+        <span class="note-timer-label">Note</span>
+        <div class="timer-ring-container" id="timer-ring-container">
         <svg class="timer-ring" width="48" height="48" viewBox="0 0 48 48">
           <circle class="timer-ring-bg" cx="24" cy="24" r="20" fill="none" stroke-width="4"/>
           <circle class="timer-ring-fg" id="timer-ring-fg" cx="24" cy="24" r="20" fill="none" stroke-width="4"
             stroke-dasharray="125.66" stroke-dashoffset="0" transform="rotate(-90 24 24)"/>
         </svg>
         <span class="timer-text" id="timer-text">10</span>
+        </div>
       </div>
+      <div class="feedback" id="feedback">&nbsp;</div>
     </div>
 
     <!-- Level section -->
@@ -120,33 +129,11 @@
       <div class="fingering-hint hidden" id="fingering-hint"></div>
     </div>
 
-    <!-- Feedback -->
-    <div class="feedback" id="feedback">&nbsp;</div>
-
-    <!-- Gamification HUD -->
-    <div class="game-hud" id="game-hud">
-      <div class="hud-item">
-        <span class="hud-label">Points</span>
-        <span class="hud-value" id="hud-points">0</span>
-      </div>
-      <div class="hud-item">
-        <span class="hud-label">Combo</span>
-        <span class="hud-value" id="hud-combo">0</span>
-      </div>
-      <div class="hud-item">
-        <span class="hud-label">Multiplier</span>
-        <span class="hud-multiplier" id="hud-multiplier">1x</span>
-      </div>
-      <div class="hud-item hud-xp-item">
-        <span class="hud-label">XP Level <span id="hud-xp-level">0</span></span>
-        <div class="xp-bar">
-          <div class="xp-bar-fill" id="xp-bar-fill"></div>
-        </div>
-      </div>
-    </div>
-
     <!-- Points popup (floating animation) -->
     <div class="points-popup" id="points-popup"></div>
+
+    <!-- Piano visualization -->
+    <div class="piano-viz-container" id="piano-viz"></div>
 
     <!-- Note buttons -->
     <div class="note-buttons" id="note-buttons">
@@ -161,37 +148,23 @@
 
     <p class="hint">or press A–G on your keyboard</p>
 
-    <!-- Stats -->
-    <div class="stats">
-      <div class="stat">
-        <div class="stat-label">Score</div>
-        <div class="stat-value" id="score">0 / 0</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Accuracy</div>
-        <div class="stat-value" id="accuracy">0%</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Streak</div>
-        <div class="stat-value" id="streak">0</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Best Streak</div>
-        <div class="stat-value" id="best-streak">0</div>
-      </div>
     </div>
-
-    <!-- Leaderboard / Session History -->
-    <div class="leaderboard-section" id="leaderboard-section">
-      <div class="lb-tabs">
-        <button class="lb-tab active" data-tab="history">History</button>
-        <button class="lb-tab" data-tab="top">Top Scores</button>
-        <button class="lb-tab" data-tab="achievements">Achievements</button>
+    <!-- Side column: always-visible panels -->
+    <aside class="leaderboard-column">
+      <div class="lb-panel">
+        <h3 class="lb-panel-title">Top Scores</h3>
+        <div class="lb-panel-body" id="scores-content"></div>
+        <div class="lb-pagination" id="scores-pagination">
+          <button class="lb-page-btn" id="scores-prev" disabled>Prev</button>
+          <span class="lb-page-info" id="scores-page-info">1 / 1</span>
+          <button class="lb-page-btn" id="scores-next" disabled>Next</button>
+        </div>
       </div>
-      <div class="lb-content" id="lb-content">
-        <div class="lb-empty">No sessions yet. Start playing!</div>
+      <div class="lb-panel">
+        <h3 class="lb-panel-title">Achievements</h3>
+        <div class="lb-panel-body" id="achievements-content"></div>
       </div>
-    </div>
+    </aside>
   </main>
 
   <!-- Achievement toast -->
@@ -203,6 +176,76 @@
     </div>
   </div>
 
+  <!-- Start Game modal -->
+  <div class="start-game-overlay" id="start-game-overlay">
+    <div class="start-game-modal">
+      <h2 class="start-game-title">Ready to play?</h2>
+      <p class="start-game-desc">Identify as many notes as you can before time runs out.</p>
+
+      <div class="start-game-settings">
+        <div class="start-game-setting-group">
+          <label class="start-game-setting-label">Clef</label>
+          <div class="controls">
+            <button class="clef-btn" data-clef="treble">Treble</button>
+            <button class="clef-btn" data-clef="bass">Bass</button>
+            <button class="clef-btn active" data-clef="grand">Grand</button>
+          </div>
+        </div>
+        <div class="start-game-setting-group">
+          <label class="start-game-setting-label">Instrument</label>
+          <div class="controls">
+            <button class="instrument-btn active" data-mode="piano">Piano</button>
+            <button class="instrument-btn" data-mode="guitar">Guitar</button>
+          </div>
+        </div>
+        <div class="start-game-setting-group">
+          <div class="midi-section" id="midi-section">
+            <label class="midi-toggle-label">
+              <input type="checkbox" id="midi-toggle">
+              MIDI Input
+            </label>
+            <span class="midi-status disconnected" id="midi-status"></span>
+          </div>
+        </div>
+        <div class="start-game-setting-group">
+          <div class="mic-section" id="mic-section">
+            <label class="midi-toggle-label">
+              <input type="checkbox" id="mic-toggle">
+              Mic Input
+            </label>
+            <span class="midi-status disconnected" id="mic-status"></span>
+            <div class="mic-controls hidden" id="mic-controls">
+              <div class="mic-meter">
+                <div class="mic-meter-fill" id="mic-meter-fill"></div>
+                <div class="mic-meter-threshold" id="mic-meter-threshold"></div>
+              </div>
+              <label class="mic-threshold-label">
+                Threshold
+                <input type="range" id="mic-threshold" min="0.005" max="0.15" step="0.005" value="0.06">
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="start-game-duration">
+        <label for="start-game-duration">Per-note time limit</label>
+        <div class="start-game-duration-input">
+          <input type="number" id="start-game-duration" value="10" min="10" max="300" step="10">
+          <span class="timer-unit">seconds</span>
+        </div>
+      </div>
+      <div class="start-game-duration">
+        <label for="start-game-overall-duration">Session duration</label>
+        <div class="start-game-duration-input">
+          <input type="number" id="start-game-overall-duration" value="120" min="60" max="3600" step="60">
+          <span class="timer-unit">seconds</span>
+        </div>
+      </div>
+      <button class="start-game-btn-modal" id="start-game-btn">Start Game</button>
+    </div>
+  </div>
+
   <!-- Level-up celebration overlay -->
   <div class="level-up-overlay hidden" id="level-up-overlay">
     <div class="level-up-card">
@@ -211,6 +254,17 @@
       <div class="level-up-level" id="level-up-level">Level 2</div>
       <div class="level-up-name" id="level-up-name">Staff Spaces</div>
       <div class="level-up-desc" id="level-up-desc">FACE</div>
+    </div>
+  </div>
+
+  <!-- Level-down overlay -->
+  <div class="level-down-overlay hidden" id="level-down-overlay">
+    <div class="level-down-card">
+      <div class="level-down-icon">&#128546;</div>
+      <div class="level-down-title">Dropped a Level</div>
+      <div class="level-down-level" id="level-down-level">Level 1</div>
+      <div class="level-down-name" id="level-down-name">Staff Lines</div>
+      <div class="level-down-desc" id="level-down-desc">3 wrong in a row — let's review</div>
     </div>
   </div>
 

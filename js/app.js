@@ -10,14 +10,12 @@ import { GamificationManager } from './gamificationManager.js';
 
 const staffContainer = document.getElementById('staff');
 
-let currentClef    = CLEF_MODES.TREBLE;
+let currentClef    = CLEF_MODES.GRAND;
 let inputMode      = 'click';
 let instrumentMode = 'piano';
 let lastNote       = null;
 let midiHandler    = null;
 let micHandler     = null;
-let currentLbTab   = 'history';
-
 const progressManager = new ProgressManager();
 const gamificationManager = new GamificationManager();
 
@@ -33,6 +31,32 @@ const timerManager = new TimerManager({
   },
 });
 
+let sessionActive = false;
+const overallTimerManager = new TimerManager({
+  onTick: (remaining, max) => {
+    ui.updateOverallTimer(remaining, max);
+  },
+  onExpired: () => {
+    sessionActive = false;
+    timerManager.stop();
+    const wasInRound = quiz.roundActive;
+    quiz.roundActive = false;
+    if (wasInRound) {
+      const record = gamificationManager.getSessionRecord();
+      if (record.total > 0) {
+        progressManager.saveSession(record);
+      }
+    }
+    progressManager.saveGamificationState(gamificationManager.getState());
+    ui.setRoundState(false);
+    ui.updateTimer(0, 0);
+    ui.updateOverallTimer(0, 0);
+    requestAnimationFrame(() => {
+      renderLeaderboard();
+    });
+  },
+});
+
 const quiz = new QuizManager({
   clefMode: currentClef,
   inputMode: inputMode,
@@ -43,6 +67,7 @@ const quiz = new QuizManager({
     lastNote = note;
     renderNote(staffContainer, note, currentClef);
     ui.updateFingeringHint(note);
+    ui.updatePianoVisualization(null);
   },
   onFeedback: (correct, noteName, delay, customText) => {
     ui.showFeedback(correct, noteName, delay, customText);
@@ -52,6 +77,11 @@ const quiz = new QuizManager({
   },
   onLevelUp: (info) => {
     ui.showLevelUp(info);
+    ui.updateLevelDisplay(quiz.getProgressInfo());
+    ui.showLevelDropdown(currentClef, quiz.getProgressInfo().currentLevel, quiz.getProgressInfo().unlockedLevel);
+  },
+  onLevelDown: (info) => {
+    ui.showLevelDown(info);
     ui.updateLevelDisplay(quiz.getProgressInfo());
     ui.showLevelDropdown(currentClef, quiz.getProgressInfo().currentLevel, quiz.getProgressInfo().unlockedLevel);
   },
@@ -90,6 +120,8 @@ const quiz = new QuizManager({
 const ui = new UIController({
   onNoteGuess: (letter) => {
     if (inputMode === 'click') {
+      const octave = lastNote?.name.replace(/\D/g, '') || '4';
+      ui.updatePianoVisualization({ name: letter + octave });
       quiz.checkAnswer(letter);
     }
   },
@@ -98,6 +130,13 @@ const ui = new UIController({
     quiz.setClefMode(clef);
     const info = quiz.getProgressInfo();
     ui.showLevelDropdown(currentClef, info.currentLevel, info.unlockedLevel);
+    if (!quiz.roundActive) {
+      const placeholder = clef === 'bass' ? { key: 'e/3', midi: 52, name: 'E3', clef: 'bass' }
+        : clef === 'grand' ? { key: 'c/4', midi: 60, name: 'C4', clef: 'treble' }
+        : { key: 'c/4', midi: 60, name: 'C4', clef: 'treble' };
+      renderNote(staffContainer, placeholder, currentClef);
+      ui.updatePianoVisualization(null);
+    }
   },
   onInputModeChange: (mode) => {
     inputMode = mode;
@@ -117,17 +156,23 @@ const ui = new UIController({
     if (micHandler) micHandler.transpose = mode === 'guitar' ? 12 : 0;
   },
   onMicThresholdChange: (val) => { if (micHandler) micHandler.minRms = val; },
-  onTimerToggle: (enabled) => {
-    quiz.setTimerEnabled(enabled);
-    if (!enabled) {
-      ui.updateTimer(0, 0);
+  onStartGame: () => {
+    const noteDuration = parseInt(document.getElementById('start-game-duration')?.value || document.getElementById('timer-duration')?.value || 10, 10);
+    const overallDuration = parseInt(document.getElementById('start-game-overall-duration')?.value || 120, 10);
+    quiz.setTimerDuration(noteDuration);
+    if (!sessionActive) {
+      sessionActive = true;
+      gamificationManager.resetSession();
+      overallTimerManager.start(overallDuration);
+      ui.updateOverallTimer(overallDuration, overallDuration);
     }
+    quiz.start(true);
+    ui.setRoundState(true);
   },
   onTimerDurationChange: (seconds) => {
     quiz.setTimerDuration(seconds);
   },
-  onLeaderboardTabChange: (tab) => {
-    currentLbTab = tab;
+  onLeaderboardTabChange: () => {
     renderLeaderboard();
   },
 });
@@ -135,7 +180,7 @@ const ui = new UIController({
 function renderLeaderboard() {
   const sessions = progressManager.getLeaderboard();
   const achievements = gamificationManager.unlockedAchievements;
-  ui.renderLeaderboard(sessions, currentLbTab, achievements);
+  ui.renderLeaderboard(sessions, null, achievements);
 }
 
 async function initMidi() {
@@ -200,4 +245,11 @@ ui.updateGamificationHUD({
 
 renderLeaderboard();
 
-quiz.start();
+ui.setRoundState(false);
+ui.updateTimer(0, 0);
+ui.updateOverallTimer(0, 0);
+
+// Render staff on load so it's visible before Start Game
+const initialNote = { key: 'c/4', midi: 60, name: 'C4', clef: 'treble' };
+renderNote(staffContainer, initialNote, currentClef);
+ui.updatePianoVisualization(null);
