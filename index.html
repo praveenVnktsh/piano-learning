@@ -64,6 +64,26 @@
       </div>
     </div>
 
+    <!-- Timer section -->
+    <div class="timer-section" id="timer-section">
+      <label class="timer-toggle-label">
+        <input type="checkbox" id="timer-toggle" checked>
+        Timer
+      </label>
+      <div class="timer-input-group">
+        <input type="number" id="timer-duration" class="timer-input" value="10" min="2" max="60" step="1">
+        <span class="timer-unit">sec</span>
+      </div>
+      <div class="timer-ring-container" id="timer-ring-container">
+        <svg class="timer-ring" width="48" height="48" viewBox="0 0 48 48">
+          <circle class="timer-ring-bg" cx="24" cy="24" r="20" fill="none" stroke-width="4"/>
+          <circle class="timer-ring-fg" id="timer-ring-fg" cx="24" cy="24" r="20" fill="none" stroke-width="4"
+            stroke-dasharray="125.66" stroke-dashoffset="0" transform="rotate(-90 24 24)"/>
+        </svg>
+        <span class="timer-text" id="timer-text">10</span>
+      </div>
+    </div>
+
     <!-- Level section -->
     <div class="level-section" id="level-section">
       <div class="level-header">
@@ -103,6 +123,31 @@
     <!-- Feedback -->
     <div class="feedback" id="feedback">&nbsp;</div>
 
+    <!-- Gamification HUD -->
+    <div class="game-hud" id="game-hud">
+      <div class="hud-item">
+        <span class="hud-label">Points</span>
+        <span class="hud-value" id="hud-points">0</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Combo</span>
+        <span class="hud-value" id="hud-combo">0</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Multiplier</span>
+        <span class="hud-multiplier" id="hud-multiplier">1x</span>
+      </div>
+      <div class="hud-item hud-xp-item">
+        <span class="hud-label">XP Level <span id="hud-xp-level">0</span></span>
+        <div class="xp-bar">
+          <div class="xp-bar-fill" id="xp-bar-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Points popup (floating animation) -->
+    <div class="points-popup" id="points-popup"></div>
+
     <!-- Note buttons -->
     <div class="note-buttons" id="note-buttons">
       <button class="note-btn" data-note="C">C</button>
@@ -135,7 +180,28 @@
         <div class="stat-value" id="best-streak">0</div>
       </div>
     </div>
+
+    <!-- Leaderboard / Session History -->
+    <div class="leaderboard-section" id="leaderboard-section">
+      <div class="lb-tabs">
+        <button class="lb-tab active" data-tab="history">History</button>
+        <button class="lb-tab" data-tab="top">Top Scores</button>
+        <button class="lb-tab" data-tab="achievements">Achievements</button>
+      </div>
+      <div class="lb-content" id="lb-content">
+        <div class="lb-empty">No sessions yet. Start playing!</div>
+      </div>
+    </div>
   </main>
+
+  <!-- Achievement toast -->
+  <div class="achievement-toast hidden" id="achievement-toast">
+    <span class="achievement-icon" id="achievement-icon"></span>
+    <div class="achievement-info">
+      <div class="achievement-title" id="achievement-title"></div>
+      <div class="achievement-desc" id="achievement-desc"></div>
+    </div>
+  </div>
 
   <!-- Level-up celebration overlay -->
   <div class="level-up-overlay hidden" id="level-up-overlay">

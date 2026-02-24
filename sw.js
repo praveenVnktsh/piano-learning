@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sight-reading-v1';
+const CACHE_NAME = 'sight-reading-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -11,6 +11,8 @@ const ASSETS = [
   './js/staffRenderer.js',
   './js/midiHandler.js',
   './js/progressManager.js',
+  './js/timerManager.js',
+  './js/gamificationManager.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
 ];

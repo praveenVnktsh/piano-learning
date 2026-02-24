@@ -1,5 +1,6 @@
 const STORAGE_KEY = 'sightReadingProgress';
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
+const MAX_LEADERBOARD = 50;
 
 function defaultData() {
   return {
@@ -19,7 +20,24 @@ function defaultData() {
       bass: 0,
       grand: 0,
     },
+    gamification: {
+      totalXP: 0,
+      playerLevel: 0,
+      unlockedAchievements: [],
+    },
+    leaderboard: [],
   };
+}
+
+function migrate(data) {
+  if (!data || typeof data !== 'object') return defaultData();
+  if (data.version === 1) {
+    data.version = SCHEMA_VERSION;
+    data.gamification = { totalXP: 0, playerLevel: 0, unlockedAchievements: [] };
+    data.leaderboard = [];
+  }
+  if (data.version !== SCHEMA_VERSION) return defaultData();
+  return data;
 }
 
 export class ProgressManager {
@@ -32,8 +50,7 @@ export class ProgressManager {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return defaultData();
       const parsed = JSON.parse(raw);
-      if (parsed.version !== SCHEMA_VERSION) return defaultData();
-      return parsed;
+      return migrate(parsed);
     } catch {
       return defaultData();
     }
@@ -78,6 +95,35 @@ export class ProgressManager {
       this.data.bestStreaks[clef] = n;
       this._save();
     }
+  }
+
+  getGamificationState() {
+    return this.data.gamification || { totalXP: 0, playerLevel: 0, unlockedAchievements: [] };
+  }
+
+  saveGamificationState(state) {
+    this.data.gamification = { ...state };
+    this._save();
+  }
+
+  addAchievement(id) {
+    if (!this.data.gamification.unlockedAchievements.includes(id)) {
+      this.data.gamification.unlockedAchievements.push(id);
+      this._save();
+    }
+  }
+
+  saveSession(record) {
+    if (!record || record.total === 0) return;
+    this.data.leaderboard.push(record);
+    if (this.data.leaderboard.length > MAX_LEADERBOARD) {
+      this.data.leaderboard = this.data.leaderboard.slice(-MAX_LEADERBOARD);
+    }
+    this._save();
+  }
+
+  getLeaderboard() {
+    return this.data.leaderboard || [];
   }
 
   resetAll() {
