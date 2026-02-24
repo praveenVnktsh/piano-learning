@@ -90,6 +90,38 @@ export const FEEDBACK_DELAYS = {
   wrong: [2000, 1800, 1500, 1200],
 };
 
+export const TIMER_DEFAULTS = {
+  enabled: true,
+  duration: 10,
+  min: 2,
+  max: 60,
+};
+
+export const GAMIFICATION = {
+  basePoints: 100,
+  comboThresholds: [
+    { streak: 3, multiplier: 2 },
+    { streak: 6, multiplier: 3 },
+    { streak: 10, multiplier: 4 },
+  ],
+  xpBase: 500, // XP for level N = xpBase * N * (N+1) / 2
+};
+
+export const ACHIEVEMENTS = [
+  { id: 'first_correct', name: 'First Note', desc: 'Get your first correct answer', icon: '\u2B50' },
+  { id: 'streak_5', name: 'On a Roll', desc: 'Reach a streak of 5', icon: '\uD83D\uDD25' },
+  { id: 'streak_10', name: 'Unstoppable', desc: 'Reach a streak of 10', icon: '\u26A1' },
+  { id: 'streak_25', name: 'Legendary', desc: 'Reach a streak of 25', icon: '\uD83D\uDC51' },
+  { id: 'speed_demon', name: 'Speed Demon', desc: 'Answer correctly within 2 seconds', icon: '\uD83D\uDE80' },
+  { id: 'century', name: 'Century', desc: 'Answer 100 questions in a session', icon: '\uD83D\uDCAF' },
+  { id: 'combo_4x', name: 'Max Combo', desc: 'Reach 4x multiplier', icon: '\uD83C\uDF1F' },
+  { id: 'scholar', name: 'Scholar', desc: 'Advance to a new level', icon: '\uD83C\uDF93' },
+  { id: 'full_range', name: 'Full Range', desc: 'Reach the highest level in any clef', icon: '\uD83C\uDFBC' },
+  { id: 'points_10k', name: '10K Club', desc: 'Earn 10,000 points in a session', icon: '\uD83D\uDCB0' },
+  { id: 'xp_level_5', name: 'Rising Star', desc: 'Reach XP level 5', icon: '\u2B50' },
+  { id: 'xp_level_10', name: 'Maestro', desc: 'Reach XP level 10', icon: '\uD83C\uDFB5' },
+];
+
 // Build lookup maps for fast name -> note object resolution
 const trebleByName = {};
 TREBLE_NOTES.forEach(n => { trebleByName[n.name] = n; });

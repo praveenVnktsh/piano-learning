@@ -2,7 +2,8 @@ import { getRandomNote, resetGenerator } from './noteGenerator.js';
 import { resolveNotePool, LEVELS, ADVANCEMENT, FEEDBACK_DELAYS } from './config.js';
 
 export class QuizManager {
-  constructor({ clefMode, onNewNote, onFeedback, onScoreUpdate, inputMode, progressManager, onLevelUp, onProgressUpdate }) {
+  constructor({ clefMode, onNewNote, onFeedback, onScoreUpdate, inputMode, progressManager, onLevelUp, onProgressUpdate,
+                timerManager, gamificationManager, onGamificationUpdate }) {
     this.clefMode = clefMode;
     this.inputMode = inputMode || 'click';
     this.onNewNote = onNewNote;
@@ -10,7 +11,10 @@ export class QuizManager {
     this.onScoreUpdate = onScoreUpdate;
     this.onLevelUp = onLevelUp || (() => {});
     this.onProgressUpdate = onProgressUpdate || (() => {});
+    this.onGamificationUpdate = onGamificationUpdate || (() => {});
     this.progressManager = progressManager;
+    this.timerManager = timerManager || null;
+    this.gamificationManager = gamificationManager || null;
 
     this.currentNote = null;
     this.score = 0;
@@ -23,6 +27,9 @@ export class QuizManager {
     this.notePool = [];
     this.noteStats = {};
     this.recentAnswers = [];
+
+    this.timerEnabled = true;
+    this.timerDuration = 10;
   }
 
   start() {
@@ -43,6 +50,10 @@ export class QuizManager {
       this.bestStreak = 0;
     }
 
+    if (this.gamificationManager) {
+      this.gamificationManager.resetSession();
+    }
+
     this.notePool = resolveNotePool(this.clefMode, this.currentLevel);
     this.onScoreUpdate(this.getStats());
     this.onProgressUpdate(this.getProgressInfo());
@@ -55,6 +66,10 @@ export class QuizManager {
     this.currentNote = getRandomNote(this.notePool, weights);
     if (this.currentNote) {
       this.onNewNote(this.currentNote);
+      // Start timer after rendering note
+      if (this.timerEnabled && this.timerManager) {
+        this.timerManager.start(this.timerDuration);
+      }
     }
   }
 
@@ -64,8 +79,18 @@ export class QuizManager {
     this.waiting = true;
     this.total++;
 
+    // Stop timer
+    let remainingSeconds = 0;
+    if (this.timerManager) {
+      remainingSeconds = this.timerManager.getRemaining();
+      this.timerManager.stop();
+    }
+
+    const isTimeout = answer === '__TIMEOUT__';
     let correct;
-    if (this.inputMode === 'midi' || this.inputMode === 'mic') {
+    if (isTimeout) {
+      correct = false;
+    } else if (this.inputMode === 'midi' || this.inputMode === 'mic') {
       correct = answer === this.currentNote.midi;
     } else {
       const noteLetter = this.currentNote.name.charAt(0).toUpperCase();
@@ -95,6 +120,25 @@ export class QuizManager {
     const correctDelay = FEEDBACK_DELAYS.correct[levelIdx];
     const wrongDelay = FEEDBACK_DELAYS.wrong[levelIdx];
 
+    // Process gamification
+    let gamResult = null;
+    if (this.gamificationManager) {
+      gamResult = this.gamificationManager.processAnswer({
+        correct,
+        remainingSeconds,
+        maxSeconds: this.timerEnabled ? this.timerDuration : 0,
+        musicLevel: this.currentLevel,
+      });
+
+      // Check century achievement
+      const centuryAch = this.gamificationManager.notifyCentury();
+      if (centuryAch.length > 0) {
+        gamResult.newAchievements = [...(gamResult.newAchievements || []), ...centuryAch];
+      }
+
+      this.onGamificationUpdate(gamResult);
+    }
+
     if (correct) {
       this.score++;
       this.streak++;
@@ -117,7 +161,8 @@ export class QuizManager {
       setTimeout(() => this.nextNote(), correctDelay);
     } else {
       this.streak = 0;
-      this.onFeedback(false, this.currentNote.name, wrongDelay);
+      const feedbackText = isTimeout ? 'Time\'s up!' : null;
+      this.onFeedback(false, this.currentNote.name, wrongDelay, feedbackText);
       this.onScoreUpdate(this.getStats());
       this.onProgressUpdate(this.getProgressInfo());
       setTimeout(() => this.nextNote(), wrongDelay);
@@ -168,6 +213,15 @@ export class QuizManager {
 
     const levels = LEVELS[this.clefMode];
     const levelInfo = levels[this.currentLevel];
+    const isMaxLevel = this.currentLevel >= levels.length - 1;
+
+    // Notify gamification of level advance
+    if (this.gamificationManager) {
+      const achievements = this.gamificationManager.notifyLevelAdvance(isMaxLevel);
+      if (achievements.length > 0) {
+        this.onGamificationUpdate({ newAchievements: achievements });
+      }
+    }
 
     this.onLevelUp({
       level: this.currentLevel + 1,
@@ -215,6 +269,17 @@ export class QuizManager {
 
   setInputMode(mode) {
     this.inputMode = mode;
+  }
+
+  setTimerEnabled(enabled) {
+    this.timerEnabled = enabled;
+    if (!enabled && this.timerManager) {
+      this.timerManager.stop();
+    }
+  }
+
+  setTimerDuration(seconds) {
+    this.timerDuration = seconds;
   }
 
   getStats() {

@@ -1,13 +1,17 @@
-import { LEVELS, GUITAR_TABS } from './config.js';
+import { LEVELS, GUITAR_TABS, ACHIEVEMENTS } from './config.js';
 
 export class UIController {
-  constructor({ onNoteGuess, onClefChange, onInputModeChange, onLevelSelect, onInstrumentModeChange, onMicThresholdChange }) {
+  constructor({ onNoteGuess, onClefChange, onInputModeChange, onLevelSelect, onInstrumentModeChange, onMicThresholdChange,
+                onTimerToggle, onTimerDurationChange, onLeaderboardTabChange }) {
     this.onNoteGuess            = onNoteGuess;
     this.onClefChange           = onClefChange;
     this.onInputModeChange      = onInputModeChange;
     this.onLevelSelect          = onLevelSelect          || (() => {});
     this.onInstrumentModeChange = onInstrumentModeChange || (() => {});
     this.onMicThresholdChange   = onMicThresholdChange   || (() => {});
+    this.onTimerToggle          = onTimerToggle           || (() => {});
+    this.onTimerDurationChange  = onTimerDurationChange   || (() => {});
+    this.onLeaderboardTabChange = onLeaderboardTabChange  || (() => {});
     this._currentHintNote       = null;
     this._instrumentMode        = 'piano';
 
@@ -30,6 +34,28 @@ export class UIController {
     this.levelUpName = document.getElementById('level-up-name');
     this.levelUpDesc = document.getElementById('level-up-desc');
 
+    // Timer UI elements
+    this.timerRingFg = document.getElementById('timer-ring-fg');
+    this.timerText = document.getElementById('timer-text');
+    this.timerRingContainer = document.getElementById('timer-ring-container');
+
+    // Gamification HUD elements
+    this.hudPoints = document.getElementById('hud-points');
+    this.hudCombo = document.getElementById('hud-combo');
+    this.hudMultiplier = document.getElementById('hud-multiplier');
+    this.hudXpLevel = document.getElementById('hud-xp-level');
+    this.xpBarFill = document.getElementById('xp-bar-fill');
+    this.pointsPopup = document.getElementById('points-popup');
+
+    // Achievement toast elements
+    this.achievementToast = document.getElementById('achievement-toast');
+    this.achievementIcon = document.getElementById('achievement-icon');
+    this.achievementTitle = document.getElementById('achievement-title');
+    this.achievementDesc = document.getElementById('achievement-desc');
+
+    // Leaderboard elements
+    this.lbContent = document.getElementById('lb-content');
+
     this.setupNoteButtons();
     this.setupClefButtons();
     this.setupKeyboard();
@@ -38,6 +64,8 @@ export class UIController {
     this.setupInstrumentMode();
     this.setupHintToggle();
     this.setupMicControls();
+    this.setupTimerControls();
+    this.setupLeaderboardTabs();
   }
 
   setupNoteButtons() {
@@ -80,11 +108,11 @@ export class UIController {
   setupInputModeToggle() {
     const midiToggle  = document.getElementById('midi-toggle');
     const micToggle   = document.getElementById('mic-toggle');
-    const noteButtons = document.getElementById('note-buttons');
+
+    // Note buttons always visible — no hiding
 
     const setMode = (mode) => {
       this.onInputModeChange(mode);
-      noteButtons?.classList.toggle('hidden', mode !== 'click');
     };
 
     if (midiToggle) {
@@ -124,8 +152,45 @@ export class UIController {
     });
   }
 
-  showFeedback(correct, noteName, delay) {
-    this.feedbackEl.textContent = correct ? 'Correct!' : `Wrong — it was ${noteName}`;
+  setupTimerControls() {
+    const toggle = document.getElementById('timer-toggle');
+    const durationInput = document.getElementById('timer-duration');
+
+    if (toggle) {
+      toggle.addEventListener('change', (e) => {
+        this.onTimerToggle(e.target.checked);
+        if (this.timerRingContainer) {
+          this.timerRingContainer.style.opacity = e.target.checked ? '1' : '0.3';
+        }
+      });
+    }
+
+    if (durationInput) {
+      durationInput.addEventListener('change', (e) => {
+        let val = parseInt(e.target.value, 10);
+        if (isNaN(val) || val < 2) val = 2;
+        if (val > 60) val = 60;
+        e.target.value = val;
+        this.onTimerDurationChange(val);
+      });
+    }
+  }
+
+  setupLeaderboardTabs() {
+    const tabs = document.querySelectorAll('.lb-tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        this.onLeaderboardTabChange(tab.dataset.tab);
+      });
+    });
+  }
+
+  showFeedback(correct, noteName, delay, customText) {
+    this.feedbackEl.textContent = customText
+      ? `${customText} It was ${noteName}`
+      : (correct ? 'Correct!' : `Wrong \u2014 it was ${noteName}`);
     this.feedbackEl.className = 'feedback ' + (correct ? 'correct' : 'wrong');
 
     const buttons = document.querySelectorAll('.note-btn');
@@ -164,7 +229,7 @@ export class UIController {
       this.progressBarEl.classList.toggle('met', accuracyMet);
 
       if (info.recentCount < info.minNotes) {
-        this.progressTextEl.textContent = `${info.recentCount}/${info.minNotes} notes — need 85%+ accuracy to advance`;
+        this.progressTextEl.textContent = `${info.recentCount}/${info.minNotes} notes \u2014 need 85%+ accuracy to advance`;
       } else {
         const pct = Math.round(info.recentAccuracy * 100);
         this.progressTextEl.textContent = `Last ${info.minNotes}: ${pct}% accuracy (need 85%)`;
@@ -288,6 +353,145 @@ export class UIController {
     const hintEl = document.getElementById('fingering-hint');
     if (!hintEl || hintEl.classList.contains('hidden')) return;
     this._renderHint(hintEl);
+  }
+
+  // Timer display
+  updateTimer(remaining, max) {
+    if (!this.timerRingFg || !this.timerText) return;
+
+    const CIRCUMFERENCE = 2 * Math.PI * 20; // r=20
+    const fraction = max > 0 ? remaining / max : 0;
+    const offset = CIRCUMFERENCE * (1 - fraction);
+    this.timerRingFg.setAttribute('stroke-dashoffset', offset.toFixed(1));
+
+    this.timerText.textContent = Math.ceil(remaining);
+
+    // Color states
+    this.timerRingFg.classList.remove('warning', 'danger');
+    if (remaining <= 3) {
+      this.timerRingFg.classList.add('danger');
+    } else if (remaining <= max * 0.3) {
+      this.timerRingFg.classList.add('warning');
+    }
+  }
+
+  // Gamification HUD
+  updateGamificationHUD({ points, combo, multiplier, xpLevel, xpProgress }) {
+    if (this.hudPoints) this.hudPoints.textContent = points.toLocaleString();
+    if (this.hudCombo) this.hudCombo.textContent = combo;
+    if (this.hudMultiplier) {
+      this.hudMultiplier.textContent = `${multiplier}x`;
+      this.hudMultiplier.className = 'hud-multiplier m' + multiplier + 'x';
+    }
+    if (this.hudXpLevel) this.hudXpLevel.textContent = xpLevel;
+    if (this.xpBarFill) this.xpBarFill.style.width = `${Math.round(xpProgress * 100)}%`;
+  }
+
+  showPointsPopup(points) {
+    if (!this.pointsPopup) return;
+
+    // Position near the HUD
+    const hud = document.getElementById('game-hud');
+    if (hud) {
+      const rect = hud.getBoundingClientRect();
+      this.pointsPopup.style.left = `${rect.left + rect.width / 2 - 30}px`;
+      this.pointsPopup.style.top = `${rect.top - 10}px`;
+    }
+
+    this.pointsPopup.textContent = `+${points}`;
+    this.pointsPopup.classList.remove('active');
+    // Force reflow to restart animation
+    void this.pointsPopup.offsetWidth;
+    this.pointsPopup.classList.add('active');
+
+    setTimeout(() => this.pointsPopup.classList.remove('active'), 1000);
+  }
+
+  _achievementQueue = [];
+  _achievementShowing = false;
+
+  showAchievementToast(achievement) {
+    this._achievementQueue.push(achievement);
+    if (!this._achievementShowing) this._showNextAchievement();
+  }
+
+  _showNextAchievement() {
+    if (this._achievementQueue.length === 0) {
+      this._achievementShowing = false;
+      return;
+    }
+    this._achievementShowing = true;
+    const achievement = this._achievementQueue.shift();
+
+    if (!this.achievementToast) return;
+    this.achievementIcon.textContent = achievement.icon;
+    this.achievementTitle.textContent = achievement.name;
+    this.achievementDesc.textContent = achievement.desc;
+    this.achievementToast.classList.remove('hidden', 'hiding');
+
+    setTimeout(() => {
+      this.achievementToast.classList.add('hiding');
+      setTimeout(() => {
+        this.achievementToast.classList.add('hidden');
+        this.achievementToast.classList.remove('hiding');
+        this._showNextAchievement();
+      }, 400);
+    }, 2500);
+  }
+
+  renderLeaderboard(sessions, mode, unlockedAchievements) {
+    if (!this.lbContent) return;
+
+    if (mode === 'history') {
+      if (sessions.length === 0) {
+        this.lbContent.innerHTML = '<div class="lb-empty">No sessions yet. Start playing!</div>';
+        return;
+      }
+      const rows = [...sessions].reverse().map(s => {
+        const date = new Date(s.date);
+        const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+        const durMin = Math.floor(s.duration / 60);
+        const durSec = s.duration % 60;
+        const durStr = durMin > 0 ? `${durMin}m ${durSec}s` : `${durSec}s`;
+        return `<div class="lb-session-row">
+          <span class="lb-session-date">${dateStr} ${timeStr}</span>
+          <span class="lb-session-points">${s.points.toLocaleString()} pts</span>
+          <span class="lb-session-total">${s.total} Q</span>
+          <span class="lb-session-duration">${durStr}</span>
+        </div>`;
+      }).join('');
+      this.lbContent.innerHTML = rows;
+
+    } else if (mode === 'top') {
+      if (sessions.length === 0) {
+        this.lbContent.innerHTML = '<div class="lb-empty">No sessions yet.</div>';
+        return;
+      }
+      const sorted = [...sessions].sort((a, b) => b.points - a.points).slice(0, 10);
+      const rows = sorted.map((s, i) => {
+        return `<div class="lb-session-row">
+          <span class="lb-rank">#${i + 1}</span>
+          <span class="lb-session-points">${s.points.toLocaleString()} pts</span>
+          <span class="lb-session-total">${s.total} Q</span>
+        </div>`;
+      }).join('');
+      this.lbContent.innerHTML = rows;
+
+    } else if (mode === 'achievements') {
+      const unlocked = unlockedAchievements || [];
+      const items = ACHIEVEMENTS.map(a => {
+        const isUnlocked = unlocked.includes(a.id);
+        return `<div class="lb-achievement ${isUnlocked ? '' : 'locked'}">
+          <span class="lb-achievement-icon">${a.icon}</span>
+          <div>
+            <div class="lb-achievement-name">${a.name}</div>
+            <div class="lb-achievement-desc">${a.desc}</div>
+          </div>
+        </div>`;
+      }).join('');
+      this.lbContent.innerHTML = `<div class="lb-achievement-grid">${items}</div>`;
+    }
   }
 
   _renderHint(el) {
